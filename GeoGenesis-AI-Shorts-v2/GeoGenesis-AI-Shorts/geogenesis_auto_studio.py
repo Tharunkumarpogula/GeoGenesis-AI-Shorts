@@ -59,10 +59,20 @@ def make_image(text, outfile, font_size=48):
     draw = ImageDraw.Draw(img)
     font = ImageFont.truetype(str(FONT_PATH), font_size)
     wrapped = textwrap.fill(text, width=20)
-   bbox = draw.multiline_textbbox((0, 0), wrapped, font=font)
-w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
 
-    draw.multiline_text(((1080 - w) / 2, (1920 - h) / 2), wrapped, fill=(255, 255, 255), font=font, align="center")
+    # Use textbbox (correct for latest Pillow)
+    bbox = draw.textbbox((0, 0), wrapped, font=font)
+    w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+
+    # Center the text on the image
+    draw.multiline_text(
+        ((1080 - w) / 2, (1920 - h) / 2),
+        wrapped,
+        fill=(255, 255, 255),
+        font=font,
+        align="center"
+    )
+
     img.save(outfile)
     print(f"[IMG] Saved image: {outfile}")
 
