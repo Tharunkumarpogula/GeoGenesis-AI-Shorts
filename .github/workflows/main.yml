@@ -1,47 +1,58 @@
-
 name: Daily Generate & Upload GeoGenesis Short
 
 on:
   schedule:
     # 11:30 UTC = 5:00 PM IST
     - cron: '30 11 * * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 jobs:
   build_and_upload:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+    steps:
+      # Checkout your repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Setup Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install system deps (ffmpeg)
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      # Install system dependencies
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
 
-      - name: Install Python deps
+      # Install Python dependencies
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install edge-tts pydub pillow google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 requests python-dotenv
+          pip install gtts pydub pillow google-api-python-client google-auth google-auth-oauthlib google-auth-httplib2 requests python-dotenv
 
-      - name: Generate video
-        working-directory: GeoGenesis-AI-Shorts-v2/GeoGenesis-AI-Shorts
+      # Generate and render short
+      - name: Generate video short
         env:
           OUT_DIR: ready_videos
           FONT_PATH: /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
         run: |
-          python geogenesis_auto_studio.py
+          python GeoGenesis-AI-Shorts-v2/GeoGenesis-AI-Shorts/geogenesis_auto_studio.py
 
+      # Upload to YouTube
       - name: Upload to YouTube
-        working-directory: GeoGenesis-AI-Shorts-v2/GeoGenesis-AI-Shorts
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
           REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
           TITLE_PREFIX: ${{ secrets.TITLE_PREFIX }}
           HASHTAGS: ${{ secrets.HASHTAGS }}
-          VIDEO_DIR: ready_videos
-          PRIVACY_STATUS: public
         run: |
-          python yt_shorts_uploader.py
+          python GeoGenesis-AI-Shorts-v2/GeoGenesis-AI-Shorts/yt_shorts_uploader.py
+
+      # Optional cleanup (to keep repo light)
+      - name: Cleanup older videos
+        run: |
+          find ready_videos -type f -mtime +3 -delete
